@@ -106,11 +106,12 @@ def write_cifar_10_polluted_with_itself(train10_folder, base_name10, test_file, 
                 scipy.misc.imsave(base_train+str(alpha)+'/'+str(label)+'/image_'+str(count)+'.png', image)
                 count+=1
             classes.append(true_class)
-    
+            
     for i in range(0,10):
         os.mkdir(base_test+str(i))
+    
+    count = 0
     for index in range(0, test_size):
-        count = 0
         label = test_labels[index]
         data = test_data[index]
         scipy.misc.imsave(base_test+str(label)+'/image_'+str(count)+'.png', data)
@@ -136,5 +137,5 @@ if __name__ == '__main__':
         max_size = 12000
         alpha_list = [0,2,4,6,8]
         base_alpha_folder = '../data/alpha/'
-        test_batch = write_cifar_10_polluted_with_itself(train10_folder, base_name10, test_file, max_size, alpha_list, base_alpha_folder)
+        write_cifar_10_polluted_with_itself(train10_folder, base_name10, test_file, max_size, alpha_list, base_alpha_folder)
    
