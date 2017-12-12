@@ -43,23 +43,15 @@ def load_data():
       xs.append(x)
       ys.append(y)
 
-    #d = unpickle('data32x32/val_data')
-    #xs.append(d['data'])
-    #labels = d['labels']
-    #labels = [i-1 for i in labels]
-    #ys.append(d['labels'])
-
     x = np.concatenate(xs)/np.float32(255)
     y = np.concatenate(ys)
     x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
     x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0,3,1,2)
 
-    #y = [i-1 for i in y]
 
 
     # subtract per-pixel mean
     pixel_mean = np.mean(x[0:100000],axis=0)
-    #pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
     x -= pixel_mean
 
     # create mirrored images
@@ -185,7 +177,6 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False, augment=False
 # ############################## Main program ################################
 
 def main(n=3, num_epochs=82, model=None):
-    # Check if cifar data exists
     if not os.path.exists("./data32x32"):
         print("dataset can not be found.")
         return
@@ -287,8 +278,6 @@ def main(n=3, num_epochs=82, model=None):
                 print("New LR:"+str(new_lr))
                 sh_lr.set_value(lasagne.utils.floatX(new_lr))
 
-        # dump the network weights to a file :
-        #np.savez('cifar10_deep_residual_model.npz', *lasagne.layers.get_all_param_values(network))
     else:
         # load network weights from model file
         with np.load(model) as f:
@@ -313,7 +302,7 @@ def main(n=3, num_epochs=82, model=None):
 
 if __name__ == '__main__':
     if ('--help' in sys.argv) or ('-h' in sys.argv):
-        print("Trains a Deep Residual Learning network on cifar-10 using Lasagne.")
+        print("Trains a Deep Residual Learning network on ImageNet using Lasagne.")
         print("Network architecture and training parameters are as in section 4.2 in 'Deep Residual Learning for Image Recognition'.")
         print("Usage: %s [N [MODEL]]" % sys.argv[0])
         print()
