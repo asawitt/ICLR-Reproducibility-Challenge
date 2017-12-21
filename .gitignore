@@ -1,1 +1,4 @@
 MNIST/datasets/*
+sftp-config.json
+*.txt
+*.h5
