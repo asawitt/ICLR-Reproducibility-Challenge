@@ -12,17 +12,24 @@ from keras.layers import Dense, Dropout, Flatten
 import keras
 
 
+import gc
+
+
+alphas = [0,10,20,30,40,50,60,70,80,90,100]
 #Load MNIST dataset
-input_directory = "../datasets/ULN2500/"
-training_filename_x = input_directory + "MNIST_uniform_label_noise_0_x"
-training_filename_y = input_directory + "MNIST_uniform_label_noise_0_y"
+NUM_DATAPOINTS = 60000
+
+input_directory = "../datasets/ULN" + str(NUM_DATAPOINTS) + "/"
+training_filename_x = input_directory + "MNIST_uniform_label_noise_"
+training_filename_y = input_directory + "MNIST_uniform_label_noise_"
 
 test_filename_x = "../datasets/MNIST_raw/mnist_test_x"
 test_filename_y = "../datasets/MNIST_raw/mnist_test_y"
 
 labels = [[1 if i == j else 0 for i in range(10)] for j in range(10)]
-batch_size = 200
-num_epochs = 2
+batch_size = 500
+num_epochs = 5
+
 
 def str_to_img(s):
 	img = list(map(lambda x: 1 if x=='1' else 0,s.split(",")))
@@ -31,7 +38,7 @@ def str_to_img(s):
 def shape(line):
 	return np.array(list(map(lambda x: int(x), line.split(",")))).reshape(-1,28)
 
-def make_model():
+def make_model(alpha):
 	model = Sequential()
 	model.add(Conv2D(32, kernel_size=(3, 3),
 	                 activation='relu',
@@ -44,12 +51,13 @@ def make_model():
 	# model.add(Dropout(0.5))
 	model.add(Dense(10, activation='softmax'))
 	model.compile(loss=keras.losses.categorical_crossentropy,
-	optimizer=keras.optimizers.Adadelta(lr=0.1),
+	optimizer=keras.optimizers.Adadelta(lr=.1, rho=0.95, epsilon=1e-6),
 	metrics=['accuracy'])
 	
 	return model
 
 def get_file_data(filename_x,filename_y,one_hot_labels=True):
+	gc.collect()
 	with open(filename_x) as file_x,open(filename_y) as file_y:
 		r_labels = []; r_data = [];
 		for line in file_x:
@@ -61,6 +69,7 @@ def get_file_data(filename_x,filename_y,one_hot_labels=True):
 		else:
 			for line in file_y:
 				r_labels.append(int(line.strip()))
+	gc.collect()
 	r_data = np.array(r_data).reshape(len(r_data),28,28,1)
 
 	return r_data,r_labels
@@ -73,17 +82,29 @@ def get_test_accuracy(test_data,test_labels,model):
 		num_right += 1 if predicted == actual else 0
 	return num_right/len(test_labels)
 
+
 def main():
-	train_data,train_labels = get_file_data(training_filename_x,training_filename_y)
-	model = make_model()
-	model.fit(train_data,train_labels,epochs=num_epochs,batch_size=batch_size)
-	model.save('CNN_ULN_0.h5')
-	# test_data,test_labels = get_file_data(test_filename_x,test_filename_y,False)
-	# accuracy = get_test_accuracy(test_data,test_labels,model)
-	# print(accuracy)
-
-
-
+	test_data,test_labels = get_file_data(test_filename_x,test_filename_y,False)
+	highest_accuracy = {}
+	for alpha in alphas:
+		train_data,train_labels = get_file_data(
+			training_filename_x + str(alpha) + '_x',
+			training_filename_y + str(alpha) + '_y'
+		)
+		model = make_model(alpha)
+		highest_accuracy[alpha] = 0
+		for i in range(num_epochs):
+			model.fit(train_data,train_labels,epochs=1,batch_size=batch_size)
+			model.save('Models/CNN_ULN' + str(NUM_DATAPOINTS) + "_" + str(alpha) + '.h5')
+			#Test-set Accuracy
+			accuracy = get_test_accuracy(test_data,test_labels,model)
+			if accuracy > highest_accuracy[alpha]:
+				highest_accuracy[alpha] = accuracy		
+			print(str(i) + ") " +  str(accuracy))
+		with open("results_file2.txt",'w') as results_file:
+			for key in highest_accuracy.keys():
+				results_file.write("highest_accuracy[" + str(key) + "]=" + str(highest_accuracy[key]))
+		
 if __name__ == "__main__":
 	main()
 
